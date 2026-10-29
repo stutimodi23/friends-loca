@@ -1,0 +1,132 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Friend Location Tracker</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      text-align: center;
+    }
+
+    header {
+      background: #1769ff;
+      color: white;
+      padding: 20px;
+    }
+
+    button {
+      margin: 18px;
+      padding: 12px 20px;
+      border: 0;
+      border-radius: 8px;
+      background: #1769ff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #map {
+      height: 65vh;
+      min-height: 350px;
+      width: 100%;
+    }
+
+    #status {
+      padding: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h2>Friend Location Tracker</h2>
+    <p>Share your location with permission</p>
+  </header>
+
+  <button id="shareBtn">Share My Location</button>
+  <p id="status">Location sharing is off.</p>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const map = L.map("map").setView([20.5937, 78.9629], 5);
+
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    let marker;
+    let watchId = null;
+
+    const status = document.getElementById("status");
+    const button = document.getElementById("shareBtn");
+
+    button.addEventListener("click", () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        status.textContent = "Location sharing is off.";
+        button.textContent = "Share My Location";
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        status.textContent = "Geolocation is not supported.";
+        return;
+      }
+
+      status.textContent = "Requesting location permission...";
+
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          if (!marker) {
+            marker = L.marker([lat, lng]).addTo(map);
+          } else {
+            marker.setLatLng([lat, lng]);
+          }
+
+          marker.bindPopup("Your current location");
+          map.setView([lat, lng], 16);
+
+          status.textContent =
+            `Location updated: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+          button.textContent = "Stop Sharing";
+        },
+        (error) => {
+          status.textContent =
+            "Unable to get location. Check browser permissions.";
+
+          if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+          }
+
+          button.textContent = "Share My Location";
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 5000,
+          timeout: 15000
+        }
+      );
+    });
+  </script>
+</body>
+</html>

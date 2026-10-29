@@ -1,0 +1,2 @@
+# friends-loca
+get intresting
